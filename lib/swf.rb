@@ -26,9 +26,6 @@ module SwfmillRuby
       @texts = ReplacableResources.new
       @movieclips = ReplacableResources.new
       read_swf_structure unless template_mode
-      def @images.[]=(k,v); super; self.replaced_ids << k; end
-      def @texts.[]=(k,v); super; self.replaced_ids << k; end
-      def @movieclips.[]=(k,v); super; self.replaced_ids << k; end
     end
 
     # get internal movieclip id by instance name on stage
@@ -535,6 +532,14 @@ module SwfmillRuby
             raise ReplaceTargetNotFoundError
           end
         end
+        if @texts.replaced_vars.include? object_var then
+          text_node = xmldoc.find_first(".//DefineEditText[@variableName='#{object_var}']")
+          if text_node then
+            text_node.attributes['initialText'] = text
+          else
+            raise ReplaceTargetNotFoundError
+          end
+        end
       end
       # replace movieclip
       ## get available object_id (greadter than maximum now)
@@ -596,10 +601,16 @@ module SwfmillRuby
 
   # ReplacableResouces in Swf
   class ReplacableResources < Hash
-    attr_accessor :replaced_ids
+    attr_accessor :replaced_vars, :replaced_ids
     def initialize
       super
-      @replaced_ids = []
+      @replaced_ids  = []
+      @replaced_vars = []
+    end
+
+    def []=(k, v)
+      super
+      (/^\d/ === k ? @replaced_ids : @replaced_vars) << k
     end
   end
 
